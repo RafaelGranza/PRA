@@ -15,7 +15,7 @@ typedef struct dado{
 typedef struct bloco{
 
   int tamanho = 0;
-  vector<Dado> dados =vector<Dado>(TAMANHO);
+  vector<Dado> dados;
 
 }Bloco;
 
@@ -57,14 +57,15 @@ void insereDadoNaFita(Fita &fita, Dado dado){
     }
 
     if(fita.blocos.back().tamanho<TAMANHO){
-        fita.blocos.back().dados[fita.blocos.back().tamanho]=dado;
+        fita.blocos.back().dados.push_back(dado);
         fita.blocos.back().tamanho++;
     }else{
         Bloco auxBloco;
         fita.blocos.push_back(auxBloco);
-        fita.blocos.back().dados[fita.blocos.back().tamanho]=dado;
+        fita.blocos.back().dados.push_back(dado);
         fita.blocos.back().tamanho++;
     }
+    //printf("%lu\n", fita.blocos.back().dados[fita.blocos.back().tamanho].chave1);
     sort(fita.blocos.back().dados.begin(), fita.blocos.back().dados.end(),comparacaoCustomizadaFODA());
 }
 
@@ -73,6 +74,10 @@ void lerArquivo(Leitura &leitura){
 
     FILE* f;
     f=fopen("saida","r");
+    if(f==NULL){
+        printf("Arquivo Invalido\n");
+        return;
+    }
     int i, fitaAtual = 0, iFita=0;
     for(i=0;i<(475*1000*1000)/sizeof(Dado);i++){
 
@@ -119,6 +124,14 @@ void lerArquivo(Leitura &leitura){
 int main(int argc, char const *argv[]) {
     Leitura lt;
     lerArquivo(lt);
-
+    for(int i =0;i< TAMANHO;i++){
+        printf("FITA %d\n", i);
+        for(int j =0;j<lt.fitas[i].blocos.size();j++){
+            printf("BLOCO %d\n", j);
+            for(int k =0;k<lt.fitas[i].blocos[j].dados.size();k++){
+                printf("\t%lu\t%f\n", lt.fitas[i].blocos[j].dados[k].chave1,lt.fitas[i].blocos[j].dados[k].chave2);
+            }
+        }
+    }
     return 0;
 }
