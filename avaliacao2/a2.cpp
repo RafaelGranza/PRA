@@ -7,15 +7,16 @@ int TAMANHO=5;
 
 typedef struct dado{
 
-  unsigned long chave1;
-  float chave2;
+    unsigned long chave1;
+    float chave2;
+
 
 }Dado;
 
 typedef struct bloco{
 
-  int tamanho = 0;
-  vector<Dado> dados;
+    int tamanho = 0;
+    vector<Dado> dados;
 
 }Bloco;
 
@@ -96,6 +97,33 @@ void lerArquivo(Leitura &leitura){
 
 }
 
+int superMin( vector<Dado> dados ){
+    Dado minimo = dados[0];
+    int indice=0;
+    for(int i = 1; i < dados.size();i++){
+        Dado auxMinimo = minimo;
+        minimo =min(minimo,dado[i],comparacaoCustomizadaFODA());
+        if(!(auxMinimo.chave1==minimo.chave1 && auxMinimo.chave2==minimo.chave2)){
+            indice=i;
+        }
+    }
+    return indice;
+}
+
+void MergeSoft(Leitura &leitura, Escrita &escrita){
+
+    vector<int> is(TAMANHO, 0);
+
+    for(int i = 0; i < TAMANHO; i++){
+        for(int j = 0; j < leitura.fitas[i].blocos.size(); j++){
+            for(int k = 0; k < leitura.fitas[j].blocos[i].dados.size();k++){
+                //insereDadoNaFita( escrita.fitas[i], leitura.fitas[j].blocos[i].dados );
+                // PAREI AQUI
+            }
+        }
+    }
+}
+
 // Fita iniciaFita(){
 //     Fita fita;
 //     Bloco auxBloco;
@@ -104,32 +132,18 @@ void lerArquivo(Leitura &leitura){
 // }
 
 
-// class MergeGranza{
-// public:
-//
-//     int fitas, bloco;
-//     int blocoAtual;
-//     vector<Dado> bloco[m];
-//     MergeGranza( int m, int f ){
-//         fitas = f;
-//         bloco = m;
-//         blocoAtual = 0;
-//     }
-//
-//
-//
-// };
-
 
 int main(int argc, char const *argv[]) {
     Leitura lt;
+    Escrita et;
     lerArquivo(lt);
+    MergeSoft(lt,et);
     for(int i =0;i< TAMANHO;i++){
         printf("FITA %d\n", i);
-        for(int j =0;j<lt.fitas[i].blocos.size();j++){
+        for(int j =0;j<et.fitas[i].blocos.size();j++){
             printf("BLOCO %d\n", j);
-            for(int k =0;k<lt.fitas[i].blocos[j].dados.size();k++){
-                printf("\t%lu\t%f\n", lt.fitas[i].blocos[j].dados[k].chave1,lt.fitas[i].blocos[j].dados[k].chave2);
+            for(int k =0;k<et.fitas[i].blocos[j].dados.size();k++){
+                printf("\t%lu\t%f\n", et.fitas[i].blocos[j].dados[k].chave1,et.fitas[i].blocos[j].dados[k].chave2);
             }
         }
     }
