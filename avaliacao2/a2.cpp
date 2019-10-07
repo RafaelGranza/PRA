@@ -46,7 +46,7 @@ typedef struct listaFitas{
 void addBlocos( ListaFitas &lf ){
 
     Bloco auxBloco;
-    
+
     for( int i = 0; i < TAM; i++ ){
         lf.fitas[i].blocos.push_back(auxBloco);
     }
@@ -115,9 +115,9 @@ void MergeSoft(ListaFitas &leitura, ListaFitas &escrita){
         for(int i = 0; i < TAMANHO; i++){
 
             for(int j = 0; j < TAMANHO; j++){
-                
+
                 vector<Dado> compDados;
-                
+
                 for( auto ix:is ){
 
                     if( ix < leitura.fitas[j].blocos[i].dados.size() )
@@ -128,9 +128,9 @@ void MergeSoft(ListaFitas &leitura, ListaFitas &escrita){
                 iEscolhido = superMin( compDados );
                 escrita.fitas[fitaAtual].blocos.back().dados.push_back( compDados[iEscolhido] );
                 is[iEscolhido]++;
-            
+
             }
-            
+
         }
 
         fitaAtual++;
