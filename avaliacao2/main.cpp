@@ -21,7 +21,7 @@ struct comparacaoCustomizadaFODA {
 };
 
 // Conta todos os registros do arquivo
-int countReg(int iFita){
+unsigned long long int countReg(int iFita){
 
   FILE *fp;
   int count;
@@ -194,7 +194,7 @@ void hardMerge(int indice){
   unsigned long long int numBlocos = countReg((indice%2)*M) / tamanhoBloco;
   unsigned long long int iFitaSaida = 0;
 
-  printf("%d %ul\n", indice, numBlocos);
+  //printf("%d %ul\n", indice, numBlocos);
 
   for(unsigned int k = 0; k < numBlocos; k++){
 
@@ -298,6 +298,10 @@ int main(int argc, char const *argv[]) {
   for(int i = 0; i < M; i++){
       debugFita(i+1);
   }
+
+  debugFita(1);
+
+  //printf("%llu\n", countReg(0));
 
   return 0;
 }
