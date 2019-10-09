@@ -21,12 +21,15 @@ struct comparacaoCustomizadaFODA {
 };
 
 // Conta todos os registros do arquivo
-int countReg(){
+int countReg(int iFita){
 
   FILE *fp;
   int count;
+  char aux[50];
 
-  if ((fp = fopen("fita1", "r")) == NULL)
+  sprintf(aux, "fita%d", iFita+1);
+
+  if ((fp = fopen(aux, "r")) == NULL)
   {
     printf("Erro na abertura do arquivo 1");
     exit(1);
@@ -94,7 +97,7 @@ void leArquivo(){
         return;
     }
 
-    fwrite(&aux,sizeof(Dado),5,fita);
+    fwrite(&aux,sizeof(Dado),M,fita);
 
     fclose(fita);
 
@@ -160,7 +163,7 @@ void hardMerge(int indice){
     sprintf(nome, "fita%d", i+1);
     fitasEntrada[i%M] = fopen(nome,"r");
 
-    if(fitasEntrada[i]==NULL){
+    if(fitasEntrada[i%M]==NULL){
         printf("Falha na leitura do arquivo.\n");
         return;
     }
@@ -172,9 +175,15 @@ void hardMerge(int indice){
 
     char nome[50];
     sprintf(nome, "fita%d", i+1);
+
+    // limpando a fita de saida
+    FILE *auxF = fopen(nome,"w");
+    fclose(auxF);
+
+    // abrindo como append para adicionar valores em seu final
     fitasSaida[i%M] = fopen(nome,"a");
 
-    if(fitasSaida[i]==NULL){
+    if(fitasSaida[i%M]==NULL){
         printf("Falha na leitura do arquivo.\n");
         return;
     }
@@ -182,47 +191,74 @@ void hardMerge(int indice){
   }
 
   //Criar um jeito de ler TODOS os blocos
-  unsigned long long int N = countReg() / tamanhoBloco;
-  while(--N){
+  unsigned long long int numBlocos = countReg((indice%2)*M) / tamanhoBloco;
+  unsigned long long int iFitaSaida = 0;
 
-      memset(iFitasEntrada,0,sizeof(iFitasEntrada));
+  printf("%d %ul\n", indice, numBlocos);
 
-      // lendo primeiras posicoes das fitas de entrada
-      vector<Dado> dadosAux;
-      for(int i = 0; i <M; i++){
+  for(unsigned int k = 0; k < numBlocos; k++){
 
-          Dado aux;
-          if(fread(&aux,sizeof(Dado),1,fitasEntrada[i])==1){
-              dadosAux.push_back(aux);
-          }else{
-              aux.chave1=ULONG_MAX;
-              aux.chave2=FLT_MAX;
-              dadosAux.push_back(aux);
-          }
+    memset(iFitasEntrada,0,sizeof(iFitasEntrada));
 
+    // lendo primeiras posicoes das fitas de entrada
+    vector<Dado> dadosAux;
+    for(int i = 0; i < M; i++){
+
+      Dado aux;
+      if(!feof(fitasEntrada[i])){
+          fread(&aux,sizeof(Dado),1,fitasEntrada[i]);
+          dadosAux.push_back(aux);
+      }else{
+          aux.chave1=ULONG_MAX;
+          aux.chave2=INT_MAX + FLT_MAX;
+          dadosAux.push_back(aux);
       }
 
-      //Ler até o final dos blocos
-      for(unsigned long long int j = 0; j < tamanhoBloco*M; j++){
-          int iMenorDado;
+    }
 
-          iMenorDado = superMin( dadosAux );
-          //Salvar o menor dado na fita de saida respectiva
-          fwrite(&dadosAux[iMenorDado],sizeof(Dado),1,fitasSaida[j/tamanhoBloco]);
+    bool continua = false;
 
-          iFitasEntrada[iMenorDado]++;
-
-          Dado aux;
-          if( iFitasEntrada[iMenorDado] < tamanhoBloco && fread(&aux,sizeof(Dado),1,fitasEntrada[iMenorDado]) == 1 ){
-              dadosAux[iMenorDado] = aux;
-          }else{
-              aux.chave1=ULONG_MAX;
-              aux.chave2=INT_MAX + FLT_MAX;
-              dadosAux[iMenorDado] = aux;
-          }
-          // paramos aqui
-
+    for(int i = 0; i < M; i++){
+      if( iFitasEntrada[i] < tamanhoBloco && !feof(fitasEntrada[i]) ){
+        continua = true;
+        break;
       }
+    }
+
+    //Ler até o final do bloco[numBloco] de todas as fitas
+    while( continua ){
+
+      int iMenorDado;
+
+      iMenorDado = superMin( dadosAux );
+      //Salvar o menor dado na fita de saida respectiva
+      fwrite(&dadosAux[iMenorDado],sizeof(Dado),1,fitasSaida[iFitaSaida%M]);
+
+      iFitasEntrada[iMenorDado]++;
+
+      Dado aux;
+      if( iFitasEntrada[iMenorDado] < tamanhoBloco && !feof(fitasEntrada[iMenorDado]) ){
+          fread(&aux,sizeof(Dado),1,fitasEntrada[iMenorDado]);
+          dadosAux[iMenorDado] = aux;
+      }else{
+          aux.chave1=ULONG_MAX;
+          aux.chave2=INT_MAX + FLT_MAX;
+          dadosAux[iMenorDado] = aux;
+      }
+
+      continua = false;
+
+      for(int i = 0; i < M; i++){
+        if( iFitasEntrada[i] < tamanhoBloco && !feof(fitasEntrada[i]) ){
+          continua = true;
+          break;
+        }
+      }
+
+    }
+
+    iFitaSaida++;
+
   }
 
   // fechando todas as fitas
@@ -235,18 +271,33 @@ void hardMerge(int indice){
 
 int main(int argc, char const *argv[]) {
 
-    int quantidadeiteracoes = 1;
-    criaFitas();
+  setbuf(stdout, NULL);
 
-    leArquivo();
+  /*
+  n = 29687500
+  m = 5
+  f = 5
+  P(n) = 9,690835916581937 ~ 10
 
-    for(int i = 0 ; i < quantidadeiteracoes ; i++ ){
-        hardMerge(i);
-    }
+  n = 3125
+  m = 5
+  f = 5
+  P(n) = 4
+  */
 
-    for(int i = 0; i < M; i++){
-        debugFita(i+1);
-    }
+  // int quantidadeiteracoes = 4; // se TAM == 1000*50
+  int quantidadeiteracoes = 10; // se TAM == 475*1000*1000
+  criaFitas();
 
-    return 0;
+  leArquivo();
+
+  for(int i = 0 ; i < quantidadeiteracoes ; i++ ){
+      hardMerge(i);
+  }
+
+  for(int i = 0; i < M; i++){
+      debugFita(i+1);
+  }
+
+  return 0;
 }
