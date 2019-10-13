@@ -65,7 +65,7 @@ void criaFitas(){
 
 }
 
-void leArquivo(){
+unsigned long leArquivo(){
 
   FILE* f;
 
@@ -73,37 +73,49 @@ void leArquivo(){
 
   if(f==NULL){
       printf("Falha na leitura do arquivo.\n");
-      return;
+      return -1;
   }
 
   int i = 0;
 
-  while(!feof(f)){
+  Dado aux[M];
 
-    Dado aux[M];
-    fread(&aux,sizeof(Dado),M,f);
-    sort(aux, aux + M, comparacaoCustomizadaFODA());
+  FILE *fitas[M];
 
-    FILE* fita;
+  for(i = 0; i <M; i++){
+
     char nome[50];
-    i%=M;
-    i++;
-    sprintf(nome, "fita%d", i);
+    sprintf(nome, "fita%d", i+1);
+    fitas[i] = fopen(nome,"w");
 
-    fita = fopen(nome,"a");
-
-    if(fita==NULL){
+    if(fitas[i]==NULL){
         printf("Falha na leitura do arquivo.\n");
-        return;
+        return -1;
     }
-
-    fwrite(&aux,sizeof(Dado),M,fita);
-
-    fclose(fita);
 
   }
 
+   i=0;
+
+  while(fread(&aux,sizeof(Dado),M,f)==M){
+
+    sort(aux, aux + M, comparacaoCustomizadaFODA());
+
+    fwrite(&aux,sizeof(Dado),M,fitas[i]);
+
+    i++;
+    i%=M;
+
+  }
+  unsigned long count;
+  fseek(f, 0L, SEEK_END);
+  count = ftell(f) / sizeof(Dado);
+  for(i = 0; i <M; i++){
+    fclose(fitas[i]);
+  }
+
   fclose(f);
+  return count;
 
 }
 
@@ -123,15 +135,13 @@ void debugFita(int i){
 
   printf("Fita %d:\n",i);
   Dado a;
-  while(!feof(f)){
-    fread(&a,sizeof(Dado),1,f);
+  while( fread(&a,sizeof(Dado),1,f)==1){
     printf("%lu\t\t\t%f\n", a.chave1, a.chave2);
   }
 
   fclose(f);
 
 }
-
 
 int superMin( vector<Dado> dados ){
     Dado minimo = dados[0];
@@ -146,8 +156,7 @@ int superMin( vector<Dado> dados ){
     return indice;
 }
 
-// é o soft só q hard
-void hardMerge(int indice){
+void softMerge(int indice){
 
   unsigned int iFitasEntrada[M];
   unsigned long long int tamanhoBloco = (unsigned long long int)pow( M, indice + 1 );
@@ -191,12 +200,10 @@ void hardMerge(int indice){
   }
 
   //Criar um jeito de ler TODOS os blocos
-  unsigned long long int numBlocos = countReg((indice%2)*M) / tamanhoBloco;
+  unsigned long long int numBlocos = (countReg((indice%2)*M)+tamanhoBloco-1) / (tamanhoBloco);
   unsigned long long int iFitaSaida = 0;
 
-  //printf("%d %ul\n", indice, numBlocos);
-
-  for(unsigned int k = 0; k < numBlocos; k++){
+  for(unsigned long long int  k = 0; k < numBlocos; k++){
 
     memset(iFitasEntrada,0,sizeof(iFitasEntrada));
 
@@ -205,8 +212,7 @@ void hardMerge(int indice){
     for(int i = 0; i < M; i++){
 
       Dado aux;
-      if(!feof(fitasEntrada[i])){
-          fread(&aux,sizeof(Dado),1,fitasEntrada[i]);
+      if(fread(&aux,sizeof(Dado),1,fitasEntrada[i])==1){
           dadosAux.push_back(aux);
       }else{
           aux.chave1=ULONG_MAX;
@@ -237,8 +243,7 @@ void hardMerge(int indice){
       iFitasEntrada[iMenorDado]++;
 
       Dado aux;
-      if( iFitasEntrada[iMenorDado] < tamanhoBloco && !feof(fitasEntrada[iMenorDado]) ){
-          fread(&aux,sizeof(Dado),1,fitasEntrada[iMenorDado]);
+      if( iFitasEntrada[iMenorDado] < tamanhoBloco && fread(&aux,sizeof(Dado),1,fitasEntrada[iMenorDado])==1 ){
           dadosAux[iMenorDado] = aux;
       }else{
           aux.chave1=ULONG_MAX;
@@ -263,45 +268,36 @@ void hardMerge(int indice){
 
   // fechando todas as fitas
   for(int i = 0; i < M; i++){
+
     fclose(fitasSaida[i]);
     fclose(fitasEntrada[i]);
+
   }
 
+
+}
+
+int calcularIteracoes(unsigned long registros, unsigned long tamanhoInicialBloco,unsigned long qntFitasEntrada){
+  if (registros==-1) return 0;
+  return ceil(log(registros/(float)(tamanhoInicialBloco))/(log(qntFitasEntrada)));
 }
 
 int main(int argc, char const *argv[]) {
 
   setbuf(stdout, NULL);
 
-  /*
-  n = 29687500
-  m = 5
-  f = 5
-  P(n) = 9,690835916581937 ~ 10
-
-  n = 3125
-  m = 5
-  f = 5
-  P(n) = 4
-  */
-
-  // int quantidadeiteracoes = 4; // se TAM == 1000*50
-  int quantidadeiteracoes = 10; // se TAM == 475*1000*1000
   criaFitas();
 
-  leArquivo();
+  unsigned long nRegistros = leArquivo();
+
+  int quantidadeiteracoes = calcularIteracoes(nRegistros,M,M);
 
   for(int i = 0 ; i < quantidadeiteracoes ; i++ ){
-      hardMerge(i);
+      softMerge(i);
   }
 
-  for(int i = 0; i < M; i++){
-      debugFita(i+1);
-  }
-
-  debugFita(1);
-
-  //printf("%llu\n", countReg(0));
+  //  debugFita(1);
+  printf("Total de Registros Ordenados: %llu\n", countReg(0));
 
   return 0;
 }
